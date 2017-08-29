@@ -50,6 +50,5 @@
     "karma-phantomjs-launcher": "~0.1.0",
     "karma": "~0.10.2"
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }

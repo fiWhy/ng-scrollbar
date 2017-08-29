@@ -3,17 +3,33 @@
 angular.module('ngScrollbar', []).directive('ngScrollbar', [
   '$parse',
   '$window',
-  function ($parse, $window) {
+  '$timeout',
+  function ($parse, $window, $timeout) {
     return {
       restrict: 'A',
       replace: true,
       transclude: true,
-      scope:{
-        'showYScrollbar': '=?isBarShown'
+      scope: {
+        'showYScrollbar': '=?isBarShown',
+        'touchEventWidth': '=',
+        'hideScrollOnOut': '='
       },
-      link: function(scope, element, attrs) {
+      link: function (scope, element, attrs) {
 
         var mainElm, transculdedContainer, tools, thumb, thumbLine, track;
+
+        var enableTouchEvent = function () {
+          var touchEventWidth = scope.touchEventWidth || 768;
+          return window.innerWidth <= touchEventWidth;
+        };
+
+        var hideScrollEnabled = function () {
+          return scope.hideScrollOnOut && enableTouchEvent();
+        }
+
+        var calculateYOffset = function (offsetY) {
+          return enableTouchEvent() ? -offsetY : offsetY;
+        }
 
         var flags = {
           bottom: attrs.hasOwnProperty('bottom')
@@ -64,33 +80,32 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
           };
         };
 
-        var redraw = function() {
+        var redraw = function () {
           thumb.css('top', dragger.top + 'px');
           var draggerOffset = dragger.top / page.height;
           page.top = -Math.round(page.scrollHeight * draggerOffset);
           transculdedContainer.css('top', page.top + 'px');
         };
 
-        var trackClick = function(event) {
+        var trackClick = function (event) {
           var offsetY = event.hasOwnProperty('offsetY') ? event.offsetY : event.layerY;
           var newTop = Math.max(0, Math.min(parseInt(dragger.trackHeight, 10) - parseInt(dragger.height, 10), offsetY));
-
           dragger.top = newTop;
           redraw();
 
           event.stopPropagation();
         };
 
-        var wheelHandler = function(event) {
+        var wheelHandler = function (event) {
 
           var wheelSpeed = 40;
 
           // Mousewheel speed normalization approach adopted from
           // http://stackoverflow.com/a/13650579/1427418
-          var o = event, d = o.detail, w = o.wheelDelta, n = 225, n1 = n-1;
+          var o = event, d = o.detail, w = o.wheelDelta, n = 225, n1 = n - 1;
 
           // Normalize delta
-          d = d ? w && (f = w/d) ? d/f : -d/1.35 : w/120;
+          d = d ? w && (f = w / d) ? d / f : -d / 1.35 : w / 120;
           // Quadratic scale if |d| > 1
           d = d < 1 ? d < -1 ? (-Math.pow(d, 2) - n1) / n : d : (Math.pow(d, 2) + n1) / n;
           // Delta *should* not be greater than 2...
@@ -111,7 +126,7 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
         var lastOffsetY = 0;
 
         var thumbDrag = function (event, offsetX, offsetY) {
-          dragger.top = Math.max(0, Math.min(parseInt(dragger.trackHeight, 10) - parseInt(dragger.height, 10), offsetY));
+          dragger.top = Math.max(0, Math.min(parseInt(dragger.trackHeight, 10) - parseInt(dragger.height, 10), calculateYOffset(offsetY)));
           event.stopPropagation();
         };
 
@@ -130,7 +145,8 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
 
         var _touchDragHandler = function (event) {
           var newOffsetX = 0;
-          var newOffsetY = event.originalEvent.changedTouches[0].pageY - thumb[0].scrollTop - lastOffsetY;
+          var changedTouches = event.changedTouches ? event.changedTouches : event.originalEvent.changedTouches;
+          var newOffsetY = changedTouches[0].pageY - parseInt(thumb.css("top") || 0) - lastOffsetY;
           thumbDrag(event, newOffsetX, newOffsetY);
           redraw();
         };
@@ -141,21 +157,21 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
           event.stopPropagation();
         };
 
-        var registerEvent = function(elm) {
-          var wheelEvent = win[0].onmousewheel !== undefined ? 'mousewheel' : 'DOMMouseScroll';
+        var registerEvent = function (elm, eventName) {
+          var event = eventName || 'mousewheel';
           if (hasAddEventListener) {
-            elm.addEventListener(wheelEvent, wheelHandler, false);
+            elm.addEventListener(event, wheelHandler, false);
           } else {
-            elm.attachEvent('onmousewheel', wheelHandler);
+            elm.attachEvent('on' + event, wheelHandler);
           }
         };
 
-        var removeEvent = function(elm) {
-          var wheelEvent = win[0].onmousewheel !== undefined ? 'mousewheel' : 'DOMMouseScroll';
+        var removeEvent = function (elm, eventName) {
+          var event = eventName || 'mousewheel';
           if (hasRemoveEventListener) {
-            elm.removeEventListener(wheelEvent, wheelHandler, false);
+            elm.removeEventListener(event, wheelHandler, false);
           } else {
-            elm.detachEvent('onmousewheel', wheelHandler);
+            elm.detachEvent('on' + event, wheelHandler);
           }
         };
 
@@ -172,17 +188,31 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
           page.height = element[0].offsetHeight;
           page.scrollHeight = transculdedContainer[0].scrollHeight;
 
-          if (page.height < page.scrollHeight) {
-            scope.showYScrollbar = true;
-            scope.$emit('scrollbar.show');
+          var emitShow = function () {
+            $timeout(function () {
+              scope.showYScrollbar = true;
+              scope.$emit('scrollbar.show');
+            });
+          }
 
+          var emitHide = function (e) {
+            $timeout(function () {
+              scope.showYScrollbar = false;
+              scope.$emit('scrollbar.hide');
+            });
+          }
+
+          if (page.height < page.scrollHeight) {
+            if (!hideScrollEnabled()) {
+              emitShow();
+            }
             // Calculate the dragger height
             dragger.height = Math.round(page.height / page.scrollHeight * page.height);
             dragger.trackHeight = page.height;
 
             // update the transcluded content style and clear the parent's
             calcStyles();
-            element.css({overflow: 'hidden'});
+            element.css({ overflow: 'hidden' });
             mainElm.css(scrollboxStyle);
             transculdedContainer.css(pageStyle);
             thumb.css(draggerStyle);
@@ -202,13 +232,33 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
               event.preventDefault();
             });
 
+            scope.showHideScroller = function (event, flag) {
+              var method = !scope.hideScrollOnOut ? function () { } : flag ? emitShow : emitHide;
+              method(event);
+            }
+
             // Drag the scroller by touch
-            thumb.on('touchstart', function (event) {
-              lastOffsetY = event.originalEvent.changedTouches[0].pageY - thumb[0].offsetTop;
+            var touchStartCallback = function (event) {
+              var changedTouches = event.changedTouches ? event.changedTouches : event.originalEvent.changedTouches;
+              lastOffsetY = changedTouches[0].pageY - thumb[0].offsetTop;
               win.on('touchend', _touchEnd);
               win.on('touchmove', _touchDragHandler);
+              if (hideScrollEnabled()) {
+                scope.showHideScroller(event, true);
+              }
               event.preventDefault();
+            };
+
+            var touchEndCallback = function (event) {
+              if (hideScrollEnabled()) {
+                scope.showHideScroller(event, false);
+              }
+            }
+            thumb.on('touchstart', touchStartCallback);
+            transculdedContainer.on('touchstart', function (e) {
+              touchStartCallback(e);
             });
+            transculdedContainer.on('touchend', touchEndCallback);
 
             if (rollToBottom) {
               flags.bottom = false;
@@ -219,19 +269,18 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
 
             redraw();
           } else {
-            scope.showYScrollbar = false;
-            scope.$emit('scrollbar.hide');
+            emitHide();
 
             thumb.off('mousedown');
             removeEvent(transculdedContainer[0]);
             transculdedContainer.attr('style', 'position:relative;top:0'); // little hack to remove other inline styles
-            mainElm.css({height: '100%'});
+            mainElm.css({ height: '100%' });
           }
         };
 
         var rebuildTimer;
 
-        var rebuild = function(e, data) {
+        var rebuild = function (e, data) {
           /* jshint -W116 */
           if (rebuildTimer != null) {
             clearTimeout(rebuildTimer);
@@ -245,7 +294,7 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
               scope.$digest();
             }
             // update parent for flag update
-            if(!scope.$parent.$$phase){
+            if (!scope.$parent.$$phase) {
               scope.$parent.$digest();
             }
           }, 72);
@@ -264,17 +313,17 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
         }
       },
       template: '<div>' +
-        '<div class="ngsb-wrap">' +
-          '<div class="ngsb-container" ng-transclude></div>' +
-          '<div class="ngsb-scrollbar" style="position: absolute; display: block;" ng-show="showYScrollbar">' +
-            '<div class="ngsb-thumb-container">' +
-              '<div class="ngsb-thumb-pos" oncontextmenu="return false;">' +
-                '<div class="ngsb-thumb" ></div>' +
-              '</div>' +
-              '<div class="ngsb-track"></div>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
+      '<div class="ngsb-wrap" ng-mouseenter="showHideScroller($event, true)" ng-mouseleave="showHideScroller($event, false)">' +
+      '<div class="ngsb-container" ng-transclude></div>' +
+      '<div class="ngsb-scrollbar" style="position: absolute; display: block;" ng-show="showYScrollbar">' +
+      '<div class="ngsb-thumb-container">' +
+      '<div class="ngsb-thumb-pos" oncontextmenu="return false;">' +
+      '<div class="ngsb-thumb" ></div>' +
+      '</div>' +
+      '<div class="ngsb-track"></div>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
       '</div>'
     };
   }
