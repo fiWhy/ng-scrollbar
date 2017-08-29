@@ -1,5 +1,5 @@
 'use strict';
-
+require("./ng-scrollbar.scss");
 angular.module('ngScrollbar', []).directive('ngScrollbar', [
   '$parse',
   '$window',
@@ -65,14 +65,14 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
             return false;
           });
           content.on("touchstart", function () {
-            notifyShow();
+            enableMobileDeeds() && notifyShow();
           });
 
           content.on("touchend", function () {
-            notifyHide();
+            enableMobileDeeds() && notifyHide();
           });
 
-          content.on("mouseleave", function () {
+          container.on("mouseleave", function () {
             onMouseLeave();
           })
 
