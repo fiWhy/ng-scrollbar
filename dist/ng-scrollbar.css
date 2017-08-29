@@ -1,82 +1,45 @@
-.ngsb-wrap {
-  -ms-touch-action: none;
+.ss-container {
+  position: relative;
 }
-.ngsb-wrap .ngsb-container {
-  width: auto;
+.ss-wrapper {
   overflow: hidden;
-  transition: 0.5s all;
-}
-.ngsb-wrap:hover .ngsb-scrollbar {
-  opacity: 1;
-  filter: "alpha(opacity=100)";
-  -ms-filter: "alpha(opacity=100)";
-  /* old ie */
-}
-.ngsb-wrap .ngsb-scrollbar {
-  width: 16px;
-  height: 100%;
-  top: 0;
-  right: 0;
-  opacity: 0.75;
-  filter: "alpha(opacity=75)";
-  -ms-filter: "alpha(opacity=75)";
-  /* old ie */
-}
-.ngsb-wrap .ngsb-scrollbar .ngsb-thumb-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  height: auto;
-}
-.ngsb-wrap .ngsb-scrollbar a.ngsb-thumb-container {
-  margin: 20px 0;
-}
-.ngsb-wrap .ngsb-scrollbar .ngsb-track {
-  height: 100%;
-  margin: 0 auto;
-  width: 6px;
-  background: #000;
-  background: rgba(0, 0, 0, 0.4);
-  -webkit-border-radius: 2px;
-  -moz-border-radius: 2px;
-  border-radius: 2px;
-  filter: "alpha(opacity=40)";
-  -ms-filter: "alpha(opacity=40)";
-  /* old ie */
-  box-shadow: 1px 1px 1px rgba(255, 255, 255, 0.1);
-}
-.ngsb-wrap .ngsb-scrollbar .ngsb-thumb-pos {
-  cursor: pointer;
   width: 100%;
-  height: 30px;
-}
-.ngsb-wrap .ngsb-scrollbar .ngsb-thumb-pos .ngsb-thumb {
-  transition: 0.5s all;
-  width: 4px;
   height: 100%;
-  margin: 0 auto;
-  -webkit-border-radius: 10px;
-  -moz-border-radius: 10px;
-  border-radius: 10px;
-  text-align: center;
-  background: #fff;
-  /* rgba fallback */
-  background: rgba(255, 255, 255, 0.4);
-  filter: "alpha(opacity=40)";
-  -ms-filter: "alpha(opacity=40)";
-  /* old ie */
+  position: relative;
+  z-index: 1;
+  float: left;
 }
-.ngsb-wrap .ngsb-scrollbar .ngsb-thumb-pos:hover .ngsb-thumb {
-  background: rgba(255, 255, 255, 0.5);
-  filter: "alpha(opacity=50)";
-  -ms-filter: "alpha(opacity=50)";
-  /* old ie */
+.ss-content {
+  height: 100%;
+  width: 100%;
+  padding: 0 32px 0 0;
+  position: relative;
+  right: -18px;
+  overflow: auto;
+  box-sizing: border-box;
 }
-.ngsb-wrap .ngsb-scrollbar .ngsb-thumb-pos:active {
-  background: rgba(255, 255, 255, 0.6);
-  filter: "alpha(opacity=60)";
-  -ms-filter: "alpha(opacity=60)";
-  /* old ie */
+.ss-scroll {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.1);
+  width: 9px;
+  border-radius: 4px;
+  top: 0;
+  right: 10px;
+  z-index: 2;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.25s linear;
+}
+.ss-hidden {
+  display: none;
+}
+.ss-container.show-scroll .ss-scroll {
+  opacity: 1;
+}
+.ss-grabbed {
+  -o-user-select: none;
+  -ms-user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
