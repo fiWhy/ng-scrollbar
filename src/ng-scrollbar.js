@@ -14,6 +14,8 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
         'touchEventWidth': '=',
         'hideScrollOnOut': '=',
         'hideTimeout': '=',
+        'rebuildOnResize': '=',
+        'rebuildOn': '@',
       },
       link: function (scope, element, attrs) {
         var raf = window.requestAnimationFrame || window.setImmediate || function (c) { return setTimeout(c, 0); };
@@ -22,7 +24,8 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
         var container = element,
           wrapper = angular.element(element.children()[0]),
           content = angular.element(wrapper.children()[0]),
-          bar = wrapper.next();
+          bar = wrapper.next(),
+          win = angular.element($window);
 
         var touchEndTimeout;
 
@@ -49,6 +52,24 @@ angular.module('ngScrollbar', []).directive('ngScrollbar', [
               scope.$emit("scrollbar.hide");
             })
           }
+        }
+
+        if(scope.rebuildOnResize) {
+          console.log("REBUILD!");
+          var resize = function() {
+            moveBar();
+          };
+
+          win.on('resize', resize)
+          scope.$on("$destroy", function() {
+            win.off('resize', resize);
+          })
+        }
+
+        if(scope.rebuildOn) {
+          scope.$on(scope.rebuildOn, function() {
+            moveBar();
+          })
         }
 
         // Mouse drag handler
